@@ -1,0 +1,1 @@
+wget -m -w 1 -N --user-agent="Mozilla/5.0" "http://www.va.gov/vdl/application.asp?appid=5" --no-parent
