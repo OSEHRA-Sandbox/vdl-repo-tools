@@ -241,12 +241,28 @@ def _encode(str):
     
     return str
 
+def _convert_newlines(file):
+    with open(file, "rb") as fp:
+        data = fp.read()
+    
+    newdata = data.replace("\r\n", "\n")
+    
+    if newdata != data:
+        with open(file, "wb") as fp:
+            fp.write(newdata)
+           
 def _process_docs(config, file_to_doc_map):
     output = config.output_dir    
+    
     long_filename_mapping = _get_long_filename_mapping()
     files = glob.glob('%swww.va.gov/vdl/documents/**/*/*' % config.mirror_dir)
     for f in files:
         parts = f.split('vdl/')
+        
+        if not parts[1] in file_to_doc_map:
+            print parts[1]
+            continue
+            
         doc = file_to_doc_map[parts[1]]
         dir_postfix = _encode(doc.name)
         file_path = '%s/%s/' % (doc.section, _encode(doc.app))
@@ -266,7 +282,11 @@ def _process_docs(config, file_to_doc_map):
         
         ensure_dir(file_path)
         write_stats(doc.created, doc.modified, file_path + '/')
-        shutil.copyfile(f, file_path + f[f.rindex('/'):])
+        target = file_path + f[f.rindex('/'):]
+        shutil.copyfile(f, target)
+        
+        if target.endswith('.txt'):
+            _convert_newlines(target)
 
 def main():
     

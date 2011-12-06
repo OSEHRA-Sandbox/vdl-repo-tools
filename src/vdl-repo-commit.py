@@ -27,15 +27,17 @@ def _locate(pattern, root):
             yield os.path.join(path, filename)
 
 def _get_commit_message(status, dir, created, modified):
-    name = dir[1:]
+    index = dir.rindex('/')+1
+    name = dir[index:]
+    into = dir[1:index]
     
     if status == Status.CREATED:
-        message = "Initial commit of '%s'.\n\n" + \
+        message = "Add '%s' into '%s'\n\n" + \
                   "Date-Created: %s\n" + \
                   "Date-Updated: %s\n" 
-        message = message % (name, created, modified) 
+        message = message % (_decode(name), _decode(into), created, modified) 
     else:
-        message = "Updates to '%s'.\n" % name 
+        message = "Update '%s' in '%s'\n" % (_decode(name), _decode(into)) 
                   
     return message 
 
@@ -71,7 +73,22 @@ def _status(dir):
         status = Status.MODIFIED    
     
     return status
+
+def _delete_file(name, dir, fullpath):
+    subprocess.check_call(['git', 'rm', fullpath])
+    message = "Remove '%s' from '%s'\n" % (name, dir)
+    subprocess.check_call(['git', 'commit', '-m', message, '--author', 'US DVA <va.gov>'])
     
+def _delete_files(dir):
+    os.chdir(dir)
+    output = subprocess.check_output(['git', 'status', dir, '--porcelain'])
+    
+    lines = output.split('\n')
+  
+    for l in lines:
+        match = re.search(r'^D "(.*/)([^/]*)(/[^/]*)"',l.strip())
+        if match:
+            _delete_file(match.group(2), match.group(1), match.group(1)+match.group(2)+match.group(3))
 
 def _add_files(dir):
     os.chdir(dir)
@@ -99,6 +116,14 @@ class Commit:
             self.sort_key = self.created
         else:
             self.sort_key = self.updated 
+
+            
+def _decode(str):
+    str = str.replace('%2F', '/')
+    str = str.replace('%2A', '*')
+    str = str.replace('%3A', ':')
+    
+    return str
 
 def _commit_files(config):
     files = _locate("info.txt", config.repo)
@@ -129,14 +154,19 @@ def _commit_files(config):
                                       commit.updated)
         _add_files(commit.dir)
         _commit(message, commit.created, commit.updated)
+        
+    # delete any files that have been removed
+    _delete_files(config.repo)
 
 def main():
     
     parser = _get_argument_parser()
-    config = parser.parse_args()    
-        
+    config = parser.parse_args()
+    
+    # normalize path
+    config.repo = os.path.abspath(config.repo)
+    
     _commit_files(config)
-                
         
 if __name__ == '__main__': 
     main() 
