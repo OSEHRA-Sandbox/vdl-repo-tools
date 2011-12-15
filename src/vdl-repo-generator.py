@@ -253,10 +253,15 @@ def _convert_newlines(file):
            
 def _process_docs(config, file_to_doc_map):
     output = config.output_dir    
-    
     long_filename_mapping = _get_long_filename_mapping()
     files = glob.glob('%swww.va.gov/vdl/documents/**/*/*' % config.mirror_dir)
     for f in files:
+        
+        with open(f, 'r') as fp:
+            data = fp.read()
+            if data.find('<title>Page Not Found</title>') != -1:
+                continue;
+        
         parts = f.split('vdl/')
         
         if not parts[1] in file_to_doc_map:
