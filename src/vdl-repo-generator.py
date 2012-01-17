@@ -62,8 +62,12 @@ class HTMLVdlFileDocumentNameParser(HTMLParser) :
             self.td_index = 0
             self.current_doc = None
             
+    def handle_charref(self, data):
+      print "charref: " + data
       
-      
+        
+    def handle_entityref(self, data):
+      print "entityref: " + data  
       
     def handle_data(self, data):    
         
@@ -119,6 +123,12 @@ class HTMLVdlSectionFileParser(HTMLParser) :
             self.in_td = False
         elif tag == 'a':
             self.in_a = False;      
+    
+    def handle_charref(self, data):
+      print "charref: " + data
+    
+    def handle_entityref(self, data):
+      print "entityref: " + data  
             
     def handle_data(self, data):    
         if self.in_a:
@@ -147,7 +157,13 @@ class HTMLVdlSectionNameParser(HTMLParser) :
         if tag == 'div':
             self.in_div = False
         elif tag == 'a':
-            self.in_a = False;      
+            self.in_a = False;   
+            
+    def handle_charref(self, data):
+      print "charref: " + data
+    
+    def handle_entityref(self, data):
+      print "entityref: " + data  
             
     def handle_data(self, data):    
         if self.in_div and self.in_a:
@@ -177,7 +193,7 @@ def _get_app_file_to_app_mapping(section_files):
         with open(file, 'r') as fp:
             html = fp.read()
         parser = HTMLVdlSectionFileParser(file[file.rindex('/') + 1:])
-        parser.feed(html)
+        parser.feed(_replace_charref(html))
         parser.close()
         app_file_to_app_map.update(parser.get_map())
     
@@ -188,12 +204,15 @@ def _get_section_mapping(section_file):
     with open(section_file, 'r') as fp:
         html = fp.read()
     section_parser = HTMLVdlSectionNameParser()
-    section_parser.feed(html)
+    section_parser.feed(_replace_charref(html))
     section_parser.close()
     section_map = section_parser.get_map()
     return section_map
 
-
+def _replace_charref(str):
+    str = str.replace('&#8211;', '-')
+    str = str.replace('&#8212;', '-')
+    return str
 
 def _get_docs(config, app_file_to_app_map, section_map):
     files = glob.glob('%swww.va.gov/vdl/application.asp?appid=*' % config.mirror_dir)
@@ -202,7 +221,7 @@ def _get_docs(config, app_file_to_app_map, section_map):
         with open(file, 'r') as fp:
             html = fp.read()
         htmlparser = HTMLVdlFileDocumentNameParser()
-        htmlparser.feed(html)
+        htmlparser.feed(_replace_charref(html))
         htmlparser.close()
         docs = htmlparser.get_files()
         for doc in docs:
