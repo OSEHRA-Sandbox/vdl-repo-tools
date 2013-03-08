@@ -74,8 +74,8 @@ def _status(dir):
 
     return status
 
-def _delete_file(name, dir, fullpath):
-    subprocess.check_call(['git', 'rm', fullpath])
+def _delete_file(name, dir, fullpaths):
+    subprocess.check_call(['git', 'rm'] + fullpaths)
     message = "Remove '%s' from '%s'\n" % (name, dir)
     subprocess.check_call(['git', 'commit', '-m', message, '--author', 'US DVA <va.gov>'])
 
@@ -85,10 +85,22 @@ def _delete_files(dir):
 
     lines = output.split('\n')
 
+    # map of files to delete
+    map = dict()
+
     for l in lines:
-        match = re.search(r'^D "(.*/)([^/]*)(/[^/]*)"',l.strip())
+        match = re.search(r'^D "?([^"]*/)([^/]*)(/[^/"]*)"?',l.strip())
         if match:
-            _delete_file(match.group(2), match.group(1), match.group(1)+match.group(2)+match.group(3))
+            name = match.group(2)
+            path = match.group(1)
+            fullpath = match.group(1)+match.group(2)+match.group(3)
+            if (name, path) in map:
+                map[(name, path)].append(fullpath)
+            else:
+                map[(name, path)] = [fullpath]
+
+    for ((name,path), fullpaths) in map.iteritems():
+        _delete_file(name, path, fullpaths)
 
 def _add_files(dir):
     os.chdir(dir)
