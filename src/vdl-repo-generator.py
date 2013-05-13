@@ -47,7 +47,7 @@ class HTMLVdlFileDocumentNameParser(HTMLParser) :
 
         if self.td_index == 4 and tag == 'a' and len(attrs) == 1 and self.current_doc != None:
 
-            new_doc = Document(self.current_doc.name)
+            new_doc = Document(self.current_doc.name.strip())
             new_doc.created = self.current_doc.created
             new_doc.modified = self.current_doc.modified
             new_doc.file = attrs[0][1]
@@ -68,6 +68,8 @@ class HTMLVdlFileDocumentNameParser(HTMLParser) :
 
     def handle_entityref(self, data):
       print "entityref: " + data
+      if self.td_index == 1 and self.current_doc:
+          self.current_doc.name += data
 
     def handle_data(self, data):
 
@@ -78,7 +80,10 @@ class HTMLVdlFileDocumentNameParser(HTMLParser) :
 
 
         if self.td_index == 1:
-            self.current_doc = Document(data.strip())
+            if not self.current_doc:
+                self.current_doc = Document(data)
+            else:
+                self.current_doc.name += data;
         elif self.td_index == 2:
             self.current_doc.created = data.strip()
         elif self.td_index == 3:
@@ -212,6 +217,8 @@ def _get_section_mapping(section_file):
 def _replace_charref(str):
     str = str.replace('&#8211;', '-')
     str = str.replace('&#8212;', '-')
+    str = str.replace('&amp;', '&')
+
     return str
 
 def _get_docs(config, app_file_to_app_map, section_map):
@@ -313,11 +320,8 @@ def _process_docs(config, file_to_doc_map):
             _convert_newlines(target)
 
 def main():
-
     parser = _get_argument_parser()
     config = parser.parse_args()
-
-
 
     section_files = glob.glob('%swww.va.gov/vdl/section.asp?secid=*' % config.mirror_dir)
 
