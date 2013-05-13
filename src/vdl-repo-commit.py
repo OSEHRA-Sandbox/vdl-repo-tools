@@ -76,7 +76,7 @@ def _status(dir):
 
 def _delete_file(name, dir, fullpaths):
     subprocess.check_call(['git', 'rm'] + fullpaths)
-    message = "Remove '%s' from '%s'\n" % (name, dir)
+    message = "Remove '%s' from '%s'\n" % (_decode(name), _decode(dir))
     subprocess.check_call(['git', 'commit', '-m', message, '--author', 'US DVA <va.gov>'])
 
 def _delete_files(dir):
