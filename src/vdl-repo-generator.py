@@ -4,6 +4,7 @@ import re
 import glob
 import shutil
 import argparse
+import sys
 
 def _get_argument_parser():
     parser = argparse.ArgumentParser()
@@ -151,7 +152,7 @@ class HTMLVdlSectionNameParser(HTMLParser) :
         self.section_map = dict()
 
     def handle_starttag(self, tag, attrs):
-        if tag == 'div' and len(attrs) == 1 and attrs[0][1] == 'breadcrumbs':
+        if tag == 'table' and len(attrs) == 2 and attrs[1][1] == 'List of sections to browse':
             self.in_div = True
 
         if self.in_div and tag == 'a' and len(attrs) == 1:
@@ -264,7 +265,15 @@ def _encode(str):
     str = str.replace('/', '%2F')
     str = str.replace('*', '%2A')
     str = str.replace(':', '%3A')
+    str = str.replace('[', '%5B')
+    str = str.replace(']', '%5D')
 
+    return str
+
+def _encode_dir(str):
+    str = str.replace('/', '%2F')
+    str = str.replace('*', '_')
+    str = str.replace(':', '%3A')
     return str
 
 def _convert_newlines(file):
@@ -310,7 +319,6 @@ def _process_docs(config, file_to_doc_map):
                 file_path = short_path
 
         file_path = output + file_path
-
         ensure_dir(file_path)
         write_stats(doc.created, doc.modified, file_path + '/')
         target = file_path + f[f.rindex('/'):]
@@ -323,12 +331,12 @@ def main():
     parser = _get_argument_parser()
     config = parser.parse_args()
 
+    index_files = glob.glob('%svdl' % config.mirror_dir)
     section_files = glob.glob('%swww.va.gov/vdl/section.asp?secid=*' % config.mirror_dir)
 
     app_file_to_app_map = _get_app_file_to_app_mapping(section_files)
-
     # get section file_to_doc_map
-    section_map = _get_section_mapping(section_files[0])
+    section_map = _get_section_mapping(index_files[0])
 
     file_to_doc_map = _get_file_to_doc_mapping(config, app_file_to_app_map, section_map)
 

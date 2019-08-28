@@ -1,8 +1,12 @@
-MIRROR=/home/cjh/tmp/mirror/
-REPO=/home/cjh/work/VistA-Document-Library/
-wget --directory-prefix=$MIRROR -m -w 1 -N --user-agent="Mozilla/5.0" "http://www.va.gov/vdl/application.asp?appid=5" --no-parent
-. /home/cjh/workspace/vdl-repo-tools/src/test.sh
-rm -rf /home/cjh/work/VistA-Document-Library/*
-cd /home/cjh/workspace/vdl-repo-tools/src
+MIRROR=/home/jsnyder/tmp/mirror/
+REPO=/home/jsnyder/VistA-Document-Library/
+wget --directory-prefix=$MIRROR --no-check-certificate -w 1 -N --user-agent="Mozilla/5.0" "http://www.va.gov/vdl" --no-parent
+for secID in  1 2 3 4 5
+do
+  wget --directory-prefix=$MIRROR --no-check-certificate -m -w 1 -N --user-agent="Mozilla/5.0" "http://www.va.gov/vdl/section.asp?secid=$secID" --no-parent
+done
+. /home/jsnyder/vdl-repo-tools/src/test.sh
+rm -rf /home/jsnyder/VistA-Document-Library/*
+cd /home/jsnyder/vdl-repo-tools/src
 python vdl-repo-generator.py -m $MIRROR -o $REPO
 python vdl-repo-commit.py -r $REPO
